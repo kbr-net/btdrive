@@ -1,0 +1,50 @@
+menu "Atari SIO Configuration"
+
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+    config SIO_UART_PORT_NUM
+        int "SIO UART port number"
+        range 0 2 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S3
+        default 2 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S3
+        range 0 1
+        default 1
+        help
+            UART communication port number for the SIO interface.
+            See UART documentation for available port numbers.
+
+    config SIO_UART_RXD
+        int "SIO UART RXD pin number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+        default 16
+        help
+            GPIO number for UART RX pin. See UART documentation for more information
+            about available pin numbers for UART.
+
+    config SIO_UART_TXD
+        int "SIO UART TXD pin number"
+        range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+        default 17
+        help
+            GPIO number for UART TX pin. See UART documentation for more information
+            about available pin numbers for UART.
+
+    config SIO_CMD_PIN
+	int "SIO command pin"
+	range 0 39
+	default 21
+	help
+	    Set the command pin for SIO connector
+
+    config SIO_UART_RXD_INV
+	bool "Invert RXD"
+	default 0
+
+    config SIO_UART_TXD_INV
+	bool "Invert TXD"
+	default 0
+
+    config SIO_CMD_INV
+	bool "Invert command pin"
+	default 0
+
+endmenu

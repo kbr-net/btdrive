@@ -1,0 +1,155 @@
+;dos header
+;	.word $ffff
+;	.word start
+;	.word end-1
+;	*=$a800
+
+;atr header
+	.word $0296
+	.word (end-begin)/$10
+	.word $80
+	.byte 0
+	.word 0,0
+	.word 0,0
+	.byte 0
+
+	*= $600
+begin
+;tape/disk header
+	.byte 0
+	.byte (end-begin)/128
+	.word begin
+	.word start
+
+init:
+	clc
+	rts
+
+start:
+	jsr prep
+	lda #$70	;cmd get list
+	sta $302
+	lda #$40	;read flag
+	sta $303
+	lda #<buf
+	sta $304
+	lda #>buf
+	sta $305
+	lda #$02	;512 bytes
+	sta $309
+	jsr dosio
+
+	ldx #<buf	;find end of text in buffer
+	ldy #>buf
+	stx $cb
+	sty $cc
+	ldx #$0
+	ldy #$0
+findnext
+	lda ($cb),y
+	beq findend
+	iny
+	bne findnext
+	inc $cc
+	inx
+	jmp findnext
+findend
+	sty $348
+	stx $349
+
+put			;print list
+	ldx #0
+	lda $304
+	sta $344,x
+	lda $305
+	sta $345,x
+	lda #$b		;put block
+;	lda #$9		;put text(add cr)
+	sta $342,x
+	jsr $e456
+
+	ldx #0		;read input
+	lda #$07
+	sta $342
+;	lda #<buf
+;	sta $344
+;	lda #>buf
+;	sta $345
+	lda #2
+	sta $348
+	lda #0
+	sta $349
+	jsr $e456
+
+			;convert atascii to int
+	lda buf+1
+	cmp #$9b	;one digit?
+	bne two
+	lda buf
+	sec
+	sbc #$30
+	sta select
+	bcs setimage
+two
+	sec
+	sbc #$30
+	sta select
+	lda buf
+	sec
+	sbc #$30	;first digit 0?
+	beq setimage	;then exit
+	tax
+	lda #0
+	clc
+ten	adc #10
+	dex
+	bne ten
+	clc
+	adc select
+	sta select
+
+setimage
+	lda #$71	;cmd set image
+	sta $302
+	lda #$00	;no flag, just do it
+	sta $303
+	lda select
+	sta $30a
+	lda select+1
+	sta $30b
+	jsr dosio
+
+	lda #1
+	sta $348
+	jsr $e456	;wait return
+
+	jsr $e477	;reboot
+;	rts		;end
+
+dosio	jsr $e459
+	bmi err
+	rts
+
+err	lda #$10
+	sta 710
+;	pla
+;	pla
+	rts
+
+prep	ldx #16
+	lda #0
+ploop	sta $300,x	;clear dcb
+	dex
+	bne ploop
+
+	lda #$31	;devid
+	sta $300
+	inc $301	;unit 1
+	lda #3		;timeout
+	sta $306
+	rts
+
+select	.word 0
+buf	;.byte "hallo, das ist ein text",155
+	.dsb (*/$80*$80+$80)-*       ; pad to 128byte boundary
+end
