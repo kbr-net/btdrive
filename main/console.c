@@ -92,7 +92,7 @@ void do_command(char *buf)
 	}
 }
 
-void command ()
+void console ()
 {
 	char cmdbuf[16];
 	unsigned char i = 0;
@@ -130,7 +130,7 @@ void command ()
 	vTaskDelete(NULL);
 }
 
-void command_init ()
+void console_init ()
 {
-	xTaskCreatePinnedToCore(command, "command", 3*1024, NULL, 5, NULL, 1);
+	xTaskCreatePinnedToCore(console, "console", 3*1024, NULL, 5, NULL, 1);
 }

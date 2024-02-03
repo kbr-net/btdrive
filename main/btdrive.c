@@ -3,7 +3,7 @@
 #include "nvs_flash.h"
 //#include "esp_spiffs.h"
 #include "esp_vfs_fat.h"
-#include "command.h"
+#include "console.h"
 
 static const char *PART = "storage";
 static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
@@ -42,7 +42,7 @@ void app_main(void)
 
 	init_bt();
 	sio_init();
-	command_init();
+	console_init();
 
 	printf("READY\n");
 
