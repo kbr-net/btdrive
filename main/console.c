@@ -21,7 +21,7 @@ void tasklist ()
 	}
 
 	vTaskList(tasklistbuf);
-	printf("Name\t\tStat\tPrio\tStack\tPid\tCPU\n%s", tasklistbuf);
+	printf("Name\t\tStat\tPrio\tCPU\tStack\tPid\n%s", tasklistbuf);
 	free(tasklistbuf);
 }
 
