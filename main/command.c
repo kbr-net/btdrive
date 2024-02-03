@@ -7,7 +7,6 @@
 
 static const char *PART = "storage";
 
-extern unsigned char pokey_div;
 extern TaskHandle_t xSioHandle;
 
 void tasklist ()
@@ -82,12 +81,10 @@ void do_command(char *buf)
 			fs_info();
 			break;
 		case 'u':
-			pokey_div++;
-			printf("Pokey: %u\n", pokey_div);
+			xTaskNotify(xSioHandle, v|2, eSetValueWithoutOverwrite);
 			break;
 		case 'i':
-			pokey_div--;
-			printf("Pokey: %u\n", pokey_div);
+			xTaskNotify(xSioHandle, v|3, eSetValueWithoutOverwrite);
 			//esp_intr_dump(NULL);
 	}
 }

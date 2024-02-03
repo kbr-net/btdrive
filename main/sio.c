@@ -211,6 +211,14 @@ void sio_task ()
 				disk_fd[drive] = sio_insert_disk(disk_fd[drive],
 					fileindex);
 				continue;
+			case 2:
+				pokey_div++;
+				printf("Pokey: %u\n", pokey_div);
+				continue;
+			case 3:
+				pokey_div--;
+				printf("Pokey: %u\n", pokey_div);
+				continue;
 			default:
 				printf("ignoring notify %lx\n", notify);
 				continue;
