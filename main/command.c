@@ -1,9 +1,12 @@
+#include <stdio.h>
 #include <string.h>
 #include <sys/dirent.h>
 #include <sys/stat.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_vfs_dev.h"
 #include "esp_vfs_fat.h"
+#include "driver/uart.h"
 
 static const char *PART = "storage";
 
@@ -87,4 +90,47 @@ void do_command(char *buf)
 			xTaskNotify(xSioHandle, v|3, eSetValueWithoutOverwrite);
 			//esp_intr_dump(NULL);
 	}
+}
+
+void command ()
+{
+	char cmdbuf[16];
+	unsigned char i = 0;
+	char c;
+	int s;
+	fd_set fds;
+	int fd = 1;	//stdin
+
+	ESP_ERROR_CHECK(uart_driver_install(CONFIG_CONSOLE_UART_NUM,
+						256, 0, 0, NULL, 0));
+	esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART_NUM);
+
+	// command loop for serial control
+	while (1) {
+		FD_ZERO(&fds);
+		FD_SET(fd, &fds);
+
+		s = select(fd + 1, &fds, NULL, NULL, NULL);
+
+		if (s <= 0)
+			perror("select");
+
+		read(fd, &c, 1);
+		write(fd, &c, 1);	// echo
+		if (c == '\n') {
+			do_command(cmdbuf);
+			i = 0;
+			bzero(cmdbuf, sizeof(cmdbuf));
+		}
+		else if (i == sizeof(cmdbuf));
+			// ignore
+		else
+			cmdbuf[i++] = c;
+	}
+	vTaskDelete(NULL);
+}
+
+void command_init ()
+{
+	xTaskCreatePinnedToCore(command, "command", 3*1024, NULL, 5, NULL, 1);
 }

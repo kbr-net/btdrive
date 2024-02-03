@@ -1,1 +1,1 @@
-void do_command(char *);
+void command_init();

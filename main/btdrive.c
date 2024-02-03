@@ -10,12 +10,6 @@ static wl_handle_t s_wl_handle = WL_INVALID_HANDLE;
 
 void app_main(void)
 {
-	char cmdbuf[8];
-	unsigned char i = 0;
-
-	// set the console UART for stdio to blocking !!! does not work!
-	//esp_vfs_dev_uart_use_driver(CONFIG_CONSOLE_UART);
-
 	/* Initialize NVS — it is used to store PHY calibration data */
 	esp_err_t ret = nvs_flash_init();
 	if (ret == ESP_ERR_NVS_NO_FREE_PAGES)
@@ -48,24 +42,8 @@ void app_main(void)
 
 	init_bt();
 	sio_init();
+	command_init();
 
 	printf("READY\n");
 
-	// command loop for serial control
-	while (1) {
-		int c = getchar();
-		if (c != -1) {
-			putchar(c);	// echo
-			if (c == '\n') {
-				do_command(cmdbuf);
-				i = 0;
-				bzero(cmdbuf, sizeof(cmdbuf));
-			}
-			else if (i == sizeof(cmdbuf));
-				// ignore
-			else
-				cmdbuf[i++] = c;
-		}
-		vTaskDelay(100 / portTICK_PERIOD_MS);
-	}
 }
