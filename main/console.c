@@ -112,8 +112,15 @@ void console ()
 			i = 0;
 			bzero(cmdbuf, sizeof(cmdbuf));
 		}
-		else if (i == sizeof(cmdbuf));
+		else if (c == '\b') {
+			if (i > 0) {
+				write(fd, " \b", 2);
+				cmdbuf[--i] = 0;
+			}
+		}
+		else if (i == sizeof(cmdbuf))
 			// ignore
+			write(fd, "\b \b", 3);
 		else
 			cmdbuf[i++] = c;
 	}
