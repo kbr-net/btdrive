@@ -97,8 +97,6 @@ void console ()
 	char cmdbuf[16];
 	unsigned char i = 0;
 	char c;
-	int s;
-	fd_set fds;
 	int fd = 1;	//stdin
 
 	ESP_ERROR_CHECK(uart_driver_install(CONFIG_CONSOLE_UART_NUM,
@@ -107,14 +105,6 @@ void console ()
 
 	// command loop for serial control
 	while (1) {
-		FD_ZERO(&fds);
-		FD_SET(fd, &fds);
-
-		s = select(fd + 1, &fds, NULL, NULL, NULL);
-
-		if (s <= 0)
-			perror("select");
-
 		read(fd, &c, 1);
 		write(fd, &c, 1);	// echo
 		if (c == '\n') {
