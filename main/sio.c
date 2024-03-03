@@ -19,26 +19,17 @@
 
 char disk_buffer[256];
 unsigned char pokey_div = 6;
+bool HIGH;
 TaskHandle_t xSioHandle;
 cmd_buf_t cmd_buf;	// warning! sizeof(cmd_buf_t) = 6,
 			// maybe due to even boundary allocation
 
-sio_status_t sio_status = { //0x00,0xff,0xe0,0x00
-	.controller_busy = 1,
-	.drq = 1,
-	.data_lost = 1,
-	.crc_error = 1,
-	.record_not_found = 1,
-	.record_type = 1,
-	.wd_write_protect = 1,
-	.not_ready = 1,
-	.timeout = 0xe0,
+struct s_device device[4] = {
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0},
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0},
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0},
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0}
 };
-
-struct disk_flags {
-	bool ATR;
-	bool HIGH;
-} flags;
 
 char sio_crc (char* buffer, unsigned short len)
 {
@@ -62,14 +53,14 @@ bool sio_get_command ()
 	unsigned char crc = sio_crc((char *)&cmd_buf, 4);
 	if (crc != cmd_buf.cksum) {
 		printf("sio crc error: %x != %x\n", cmd_buf.cksum, crc);
-		if (! flags.HIGH) {
+		if (! HIGH) {
 			serial_change_baud(high_baud);
-			flags.HIGH = 1;
+			HIGH = 1;
 			printf("baud: %u\n", high_baud);
 		}
 		else {
 			serial_change_baud(ATARI_SPEED_STD);
-			flags.HIGH = 0;
+			HIGH = 0;
 			printf("baud: %u\n", ATARI_SPEED_STD);
 		}
 		return(FALSE);
@@ -88,9 +79,10 @@ void sio_send_ack ()
 	ets_delay_us(SIO_ACK_DELAY);
 }
 
-FILE * sio_insert_disk (FILE *fd, unsigned short idx)
+FILE * sio_insert_disk (unsigned char drive, unsigned short idx)
 {
 	FILE *newfd;
+	struct s_device *dev = &device[drive];
 	DIR *dir;
 	struct dirent *de;
 	char name[256];
@@ -112,33 +104,33 @@ FILE * sio_insert_disk (FILE *fd, unsigned short idx)
 		perror("open");
 	}
 	else {
-		if (fd) fclose(fd);
-		fd = newfd;
+		if (dev->fd) fclose(dev->fd);
+		dev->fd = newfd;
 
 		// detect file type and set flags
 		struct stat st;
-		fstat(fileno(fd), &st);
+		fstat(fileno(dev->fd), &st);
 		printf("size: %lu\n", st.st_size);
-		flags.ATR = 1;	//no other supported yet
+		dev->flags.ATR = 1;	//no other supported yet
 		if (st.st_size > 1040*128+16) {
 			puts("double");
-			sio_status.medium_density = 0;
-			sio_status.sector_size = 1;
+			dev->status.medium_density = 0;
+			dev->status.sector_size = 1;
 		}
 		else if (st.st_size > 720*128+16) {
 			puts("medium");
-			sio_status.medium_density = 1;
-			sio_status.sector_size = 0;
+			dev->status.medium_density = 1;
+			dev->status.sector_size = 0;
 		}
 		else {
 			puts("single");
-			sio_status.medium_density = 0;
-			sio_status.sector_size = 0;
+			dev->status.medium_density = 0;
+			dev->status.sector_size = 0;
 		}
 	}
 err:
 	closedir(dir);
-	return(fd);
+	return(dev->fd);
 }
 
 void sio_get_files ()
@@ -185,19 +177,18 @@ void sio_command_isr ()
 	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
 
-FILE *disk_fd[4];
-
 void sio_task ()
 {
 	unsigned long notify;
 	unsigned short fileindex;
 	unsigned char drive = 0;
+	struct s_device *dev;
 	unsigned int sector_max;
 	unsigned int sector_size;
 	unsigned long offset;
 
 	// insert the first image on flash, normally "boot.atr"
-	disk_fd[drive] = sio_insert_disk(0, 0);
+	sio_insert_disk(0, 0);
 
 	for(;;) {
 		xTaskNotifyWait(0, 0, &notify, portMAX_DELAY);
@@ -208,8 +199,7 @@ void sio_task ()
 			case 1:
 				fileindex = (notify & 0xffff0000) >> 16;
 				printf("change disk to index %u\n", fileindex);
-				disk_fd[drive] = sio_insert_disk(disk_fd[drive],
-					fileindex);
+				sio_insert_disk(drive, fileindex);
 				continue;
 			case 2:
 				pokey_div++;
@@ -253,13 +243,17 @@ void sio_task ()
 		}
 		printf("c: %u\n", c);
 
-		// only drive D1: actually supported
-		if (cmd_buf.dev != 0x31) continue;
+		// device D1:..D4:
+		if (cmd_buf.dev < 0x31 || cmd_buf.dev > 0x34) continue;
+		drive = cmd_buf.dev - 0x31;
+		dev = &device[drive];
+		// image present?
+		if (dev->fd == 0) continue;
 		//vTaskDelay(1 / portTICK_PERIOD_MS);	// T2
 
-		if (sio_status.sector_size) sector_size = 0x100;
+		if (dev->status.sector_size) sector_size = 0x100;
 		else sector_size = 0x80;
-		if (sio_status.medium_density) sector_max = 1040;
+		if (dev->status.medium_density) sector_max = 1040;
 		else sector_max = 720;
 
 		switch (cmd_buf.cmd) {
@@ -267,10 +261,10 @@ void sio_task ()
 				//printf("get status\n");
 				sio_send_ack();
 				sio_send_byte('C');
-				serial_tx((char *) &sio_status,
-					sizeof(sio_status));
-				sio_send_byte(sio_crc((char *) &sio_status,
-					sizeof(sio_status)));
+				serial_tx((char *) &dev->status,
+					sizeof(sio_status_t));
+				sio_send_byte(sio_crc((char *) &dev->status,
+					sizeof(sio_status_t)));
 				break;
 			case 'R':
 			case 'W':
@@ -287,13 +281,13 @@ void sio_task ()
 				else
 					offset = sector_size *
 						(cmd_buf.aux - 4) + 128 * 3;
-				if ( flags.ATR )
+				if ( dev->flags.ATR )
 					offset += 16;
-				fseek(disk_fd[drive], offset, SEEK_SET);
+				fseek(dev->fd, offset, SEEK_SET);
 
 				if (cmd_buf.cmd == 'R') { //read
 					fread(disk_buffer, sector_size, 1,
-						disk_fd[drive]);
+						dev->fd);
 					sio_send_byte('C');
 bad_sector:				serial_tx(disk_buffer, sector_size);
 					sio_send_byte(sio_crc(disk_buffer,
@@ -312,7 +306,7 @@ bad_sector:				serial_tx(disk_buffer, sector_size);
 					sio_send_ack();
 					unsigned int r;
 					r = fwrite(disk_buffer, 1, sector_size,
-						disk_fd[drive]);
+						dev->fd);
 					if (r == 0) {
 						perror("write");
 						sio_send_byte('E');
@@ -337,8 +331,7 @@ bad_sector:				serial_tx(disk_buffer, sector_size);
 				break;
 			case 'q':
 				sio_send_ack();
-				disk_fd[drive] = sio_insert_disk(disk_fd[drive],
-					cmd_buf.aux);
+				sio_insert_disk(drive, cmd_buf.aux);
 				sio_send_byte('C');
 				break;
 			default:

@@ -38,4 +38,14 @@ typedef struct {
 	char wd_master_status;
 } sio_status_t;
 
+struct disk_flags {
+	bool ATR;
+};
+
+struct s_device {
+	sio_status_t status;
+	struct disk_flags flags;
+	FILE *fd;
+};
+
 void sio_init();
