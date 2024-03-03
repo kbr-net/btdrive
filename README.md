@@ -1,7 +1,8 @@
 # btdrive - Atari 8-bit floppy emulator
-This is an esp32 based Atari 8-bit floppy emulator, where disk images could be easily uploaded via standard bluetooth filetransfer, stored on an internal flash filesystem.
+This is an **ESP32** based Atari 8-bit floppy emulator, where disk images could be easily uploaded via standard bluetooth filetransfer, stored on an internal flash filesystem.
 
-It is in early development state and supports read only now.
+It is in early development state, and supports up to 4 drives now due to serial console control.
+Write support may be dangerous!
 
 ## Hardware
 Any of ESP32-Wroom boards with at least 2MB flash should work. 4MB is recommended to have more space on the flash filesystem.

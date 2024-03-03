@@ -181,7 +181,7 @@ void sio_task ()
 {
 	unsigned long notify;
 	unsigned short fileindex;
-	unsigned char drive = 0;
+	unsigned char drive;
 	struct s_device *dev;
 	unsigned int sector_max;
 	unsigned int sector_size;
