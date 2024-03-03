@@ -107,7 +107,7 @@ FILE * sio_insert_disk (FILE *fd, unsigned short idx)
 	strcat(name, de->d_name);
 	printf("open: %s\n", name);
 
-	newfd = fopen(name, "r");
+	newfd = fopen(name, "r+");
 	if (! newfd) {
 		perror("open");
 	}
@@ -273,7 +273,8 @@ void sio_task ()
 					sizeof(sio_status)));
 				break;
 			case 'R':
-				//printf("read\n");
+			case 'W':
+			case 'P':
 				sio_send_ack();
 				if (cmd_buf.aux > sector_max) {
 					sio_send_byte('E');
@@ -289,16 +290,37 @@ void sio_task ()
 				if ( flags.ATR )
 					offset += 16;
 				fseek(disk_fd[drive], offset, SEEK_SET);
-				fread(disk_buffer, sector_size, 1,
-					disk_fd[drive]);
-				sio_send_byte('C');
-bad_sector:			serial_tx(disk_buffer, sector_size);
-				sio_send_byte(sio_crc(disk_buffer,
-					sector_size));
-				break;
-			case 'W':
-				printf("write\n");
-				sio_send_byte('N');
+
+				if (cmd_buf.cmd == 'R') { //read
+					fread(disk_buffer, sector_size, 1,
+						disk_fd[drive]);
+					sio_send_byte('C');
+bad_sector:				serial_tx(disk_buffer, sector_size);
+					sio_send_byte(sio_crc(disk_buffer,
+						sector_size));
+				}
+				else {			 //write
+					serial_rx(disk_buffer, sector_size);
+					char cksum;
+					serial_rx(&cksum, 1);
+					if (cksum != (sio_crc(disk_buffer,
+						sector_size))) {
+						sio_send_byte('N');
+						printf("write: cksum error");
+						break;
+					}
+					sio_send_ack();
+					unsigned int r;
+					r = fwrite(disk_buffer, 1, sector_size,
+						disk_fd[drive]);
+					if (r == 0) {
+						perror("write");
+						sio_send_byte('E');
+						break;
+					}
+					printf("%u bytes written\n", r);
+					sio_send_byte('C');
+				}
 				break;
 			case '?':
 				sio_send_ack();
