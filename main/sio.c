@@ -192,20 +192,25 @@ void sio_task ()
 
 	for(;;) {
 		xTaskNotifyWait(0, 0, &notify, portMAX_DELAY);
-		switch (notify & 0x0000ffff) {
+		unsigned int cmd = (notify & 0x0000ffff);
+		switch (cmd) {
 			case 0:
 				//puts("got command");
 				break;
 			case 1:
-				fileindex = (notify & 0xffff0000) >> 16;
-				printf("change disk to index %u\n", fileindex);
-				sio_insert_disk(drive, fileindex);
-				continue;
 			case 2:
+			case 3:
+			case 4:
+				fileindex = (notify & 0xffff0000) >> 16;
+				printf("change D%u: to index %u\n", cmd,
+					fileindex);
+				sio_insert_disk(cmd - 1, fileindex);
+				continue;
+			case 20:
 				pokey_div++;
 				printf("Pokey: %u\n", pokey_div);
 				continue;
-			case 3:
+			case 21:
 				pokey_div--;
 				printf("Pokey: %u\n", pokey_div);
 				continue;

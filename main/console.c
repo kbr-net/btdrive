@@ -63,12 +63,14 @@ void do_command(char *buf)
 {
 	char c;
 	unsigned long v = 0;
-	sscanf(buf, "%c%lu", &c, &v);
+	unsigned int x = 1;
+	sscanf(buf, "%c%lu%u", &c, &v, &x);
 	//c |= 0b00100000;	// to downcase
 	switch (c) {
 		case 'n':
 			v <<= 16;
-			xTaskNotify(xSioHandle, v|1, eSetValueWithoutOverwrite);
+			(x == 0) ? x = 1 : x;
+			xTaskNotify(xSioHandle, v|x, eSetValueWithoutOverwrite);
 			break;
 		case 'f':
 			puts("formating data partition...");
@@ -84,10 +86,12 @@ void do_command(char *buf)
 			fs_info();
 			break;
 		case 'u':
-			xTaskNotify(xSioHandle, v|2, eSetValueWithoutOverwrite);
+			xTaskNotify(xSioHandle, v|20,
+				eSetValueWithoutOverwrite);
 			break;
 		case 'i':
-			xTaskNotify(xSioHandle, v|3, eSetValueWithoutOverwrite);
+			xTaskNotify(xSioHandle, v|21,
+				eSetValueWithoutOverwrite);
 			//esp_intr_dump(NULL);
 	}
 }
