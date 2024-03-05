@@ -274,6 +274,7 @@ void sio_task ()
 			case 'R':
 			case 'W':
 			case 'P':
+				unsigned int r;
 				sio_send_ack();
 				if (cmd_buf.aux > sector_max) {
 					sio_send_byte('E');
@@ -291,8 +292,13 @@ void sio_task ()
 				fseek(dev->fd, offset, SEEK_SET);
 
 				if (cmd_buf.cmd == 'R') { //read
-					fread(disk_buffer, sector_size, 1,
+					r = fread(disk_buffer, sector_size, 1,
 						dev->fd);
+					if (r == 0) {
+						printf("read error\n");
+						sio_send_byte('E');
+						goto bad_sector;
+					}
 					sio_send_byte('C');
 bad_sector:				serial_tx(disk_buffer, sector_size);
 					sio_send_byte(sio_crc(disk_buffer,
@@ -309,7 +315,6 @@ bad_sector:				serial_tx(disk_buffer, sector_size);
 						break;
 					}
 					sio_send_ack();
-					unsigned int r;
 					r = fwrite(disk_buffer, 1, sector_size,
 						dev->fd);
 					if (r == 0) {
