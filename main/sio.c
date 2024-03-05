@@ -81,7 +81,6 @@ void sio_send_ack ()
 
 FILE * sio_insert_disk (unsigned char drive, unsigned short idx)
 {
-	FILE *newfd;
 	struct s_device *dev = &device[drive];
 	DIR *dir;
 	struct dirent *de;
@@ -95,18 +94,16 @@ FILE * sio_insert_disk (unsigned char drive, unsigned short idx)
 		goto err;
 	}
 
+	if (dev->fd) fclose(dev->fd);
+
 	strcpy(name, "/a/");
 	strcat(name, de->d_name);
 	printf("open: %s\n", name);
-
-	newfd = fopen(name, "r+");
-	if (! newfd) {
+	dev->fd = fopen(name, "r+");
+	if (! dev->fd) {
 		perror("open");
 	}
 	else {
-		if (dev->fd) fclose(dev->fd);
-		dev->fd = newfd;
-
 		// detect file type and set flags
 		struct stat st;
 		fstat(fileno(dev->fd), &st);
