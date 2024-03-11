@@ -8,7 +8,16 @@ Write support may be dangerous!
 Any of ESP32-Wroom boards with at least 2MB flash should work. 4MB is recommended to have more space on the flash filesystem.
 ESP32-C* or -S* variants do not work, because they have only BLE(bluetooth low energy).
 
-## Warning
+### Default pins
+(for Atari SIO connection)
+```
+16 - RXD
+17 - TXD
+21 - Command
+```
+But could be changed via menuconfig
+
+### Warning
 Do not directly connect the Atari SIO port(5V) to the esp32, because of different logic levels. Esp is at 3,3V and may be damaged! Use a level shifter between.
 
 ## Make
