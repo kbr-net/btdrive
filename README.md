@@ -4,6 +4,18 @@ This is an **ESP32** based Atari 8-bit floppy emulator, where disk images could 
 It is in early development state, and supports up to 4 drives now due to serial console control.
 Write support may be dangerous!
 
+## Console commands
+```
+f - format flash filesystem
+l - list filesystem
+t - task list
+u - increase highspeed pokeydiv
+i - decrease highspeed pokeydiv
+n[x] [y] - insert image[y] to drive[x](0-3).
+    Without drive defaults to 0(D1:). Without image defaults to 0
+    (first image on filesystem, which is also inserted after boot).
+```
+
 ## Hardware
 Any of ESP32-Wroom boards with at least 2MB flash should work. 4MB is recommended to have more space on the flash filesystem.
 ESP32-C* or -S* variants do not work, because they have only BLE(bluetooth low energy).
