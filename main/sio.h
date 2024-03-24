@@ -46,6 +46,7 @@ struct s_device {
 	sio_status_t status;
 	struct disk_flags flags;
 	FILE *fd;
+	char name[256];
 };
 
 void sio_init();

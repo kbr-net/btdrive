@@ -8,11 +8,12 @@ Write support may be dangerous!
 ```
 f - format flash filesystem
 l - list filesystem
+d - list drives
 t - task list
 u - increase highspeed pokeydiv
 i - decrease highspeed pokeydiv
-n[x] [y] - insert image[y] to drive[x](0-3).
-    Without drive defaults to 0(D1:). Without image defaults to 0
+n[x] [y] - insert image[x] to drive[y](1-4).
+    Without drive defaults to 1(D1:). Without image defaults to 0
     (first image on filesystem, which is also inserted after boot).
 ```
 

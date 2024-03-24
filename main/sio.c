@@ -25,10 +25,10 @@ cmd_buf_t cmd_buf;	// warning! sizeof(cmd_buf_t) = 6,
 			// maybe due to even boundary allocation
 
 struct s_device device[4] = {
-	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0},
-	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0},
-	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0},
-	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0}
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0, ""},
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0, ""},
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0, ""},
+	{{0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0xe0, 0x00}, {0}, 0, ""}
 };
 
 char sio_crc (char* buffer, unsigned short len)
@@ -102,8 +102,12 @@ FILE * sio_insert_disk (unsigned char drive, unsigned short idx)
 	dev->fd = fopen(name, "r+");
 	if (! dev->fd) {
 		perror("open");
+		// delete filename
+		dev->name[0] = 0;
 	}
 	else {
+		// store filename
+		strcpy(dev->name, de->d_name);
 		// detect file type and set flags
 		struct stat st;
 		fstat(fileno(dev->fd), &st);
@@ -164,6 +168,13 @@ void sio_get_files ()
 	free(buf);
 }
 
+void sio_list_devices ()
+{
+	for(unsigned short i = 0; i < sizeof(device)/sizeof(*device); i++) {
+		printf("D%u: %s\n", i + 1, device[i].name);
+	}
+}
+
 void sio_command_isr ()
 {
 	BaseType_t xHigherPriorityTaskWoken;
@@ -210,6 +221,9 @@ void sio_task ()
 			case 21:
 				pokey_div--;
 				printf("Pokey: %u\n", pokey_div);
+				continue;
+			case 22:
+				sio_list_devices();
 				continue;
 			default:
 				printf("ignoring notify %lx\n", notify);

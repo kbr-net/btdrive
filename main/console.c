@@ -93,6 +93,10 @@ void do_command(char *buf)
 			xTaskNotify(xSioHandle, v|21,
 				eSetValueWithoutOverwrite);
 			//esp_intr_dump(NULL);
+			break;
+		case 'd':
+			xTaskNotify(xSioHandle, v|22,
+				eSetValueWithoutOverwrite);
 	}
 }
 
